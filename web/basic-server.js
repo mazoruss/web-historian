@@ -4,6 +4,7 @@ var initialize = require('./initialize.js');
 
 // Why do you think we have this here?
 // HINT: It has to do with what's in .gitignore
+// --> We don't push the archives into git, so when we clone down the repo, we need to recreate the archives setup
 initialize('./archives');
 
 var port = 8080;
