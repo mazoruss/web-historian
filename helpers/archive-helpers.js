@@ -3,13 +3,6 @@ var path = require('path');
 var _ = require('underscore');
 var http = require('http');
 
-/*
- * You will need to reuse the same paths many times over in the course of this sprint.
- * Consider using the `paths` object below to store frequently used file paths. This way,
- * if you move any files, you'll only need to change your code in one place! Feel free to
- * customize it in any way you wish.
- */
-
 var paths = exports.paths = {
   siteAssets: path.join(__dirname, '../web/public'),
   archivedSites: path.join(__dirname, '../archives/sites'),
@@ -23,70 +16,40 @@ exports.initialize = function(pathsObj) {
   });
 };
 
-// The following function names are provided to you to suggest how you might
-// modularize your code. Keep it clean!
-
 var readListOfUrls = exports.readListOfUrls = function(callback) {
-  var urls = [];
-  fs.readFile(paths.list, function(err, data) {
-    if (err) {
-      console.log(err);
-    }
-    urls = (data.toString() === '') ? [] : data.toString().split('\n');
+  fs.readFile(paths.list, (err, data) => {
+    var urls = (data.toString() === '') ? [] : data.toString().split('\n');
     callback ? callback(urls) : null;
   });
 };
 
 exports.isUrlInList = function(url, callback) {
-  var exists = false;
-  readListOfUrls(function(urls) {
-    exists = urls.indexOf(url) > -1;
-    callback(exists);
-  });
+  readListOfUrls(urls => callback(urls.indexOf(url) > -1));
 };
 
 var addUrlToList = exports.addUrlToList = function(url) {
   readListOfUrls(function(urls) {
     urls.push(url);
-    fs.writeFile(paths.list, urls.join('\n'), function(err) {
-      if (err) {
-        console.log(err);
-      }
-    });
+    fs.writeFile(paths.list, urls.join('\n'), err => {});
   });
 };
 
 var isUrlArchived = exports.isUrlArchived = function(url, callback) {
-  var pathName = paths.archivedSites + '/' + url;
-  fs.stat(pathName, function(err, stats) {
-    callback(Boolean(stats));
-  });
+  fs.stat(paths.archivedSites + '/' + url, (err, stats) => callback(Boolean(stats)));
 };
 
 exports.downloadUrls = function(urlArray) {
   var download = function(url, exists) {
     if (!exists) {
-      console.log('url: ', url);
       var req = http.request('http://' + url, function(res) {
         var html = '';
-        res.on('data', function(chunk) {
-          html += chunk;
-        });
-        res.on('end', function() {
-          fs.writeFile(paths.archivedSites + '/' + url, html.toString(), function(error) {
-            if (error) {
-              console.log(error);
-            }
-          });
-        });
+        res.on('data', chunk => html += chunk);
+        res.on('end', () => fs.writeFile(paths.archivedSites + '/' + url, html.toString(), err => {}));
       });
       req.end();
     }
   };  
-  urlArray.forEach( url => {
-    console.log('forEach loop - url: ', url);
-    isUrlArchived(url, download.bind(null, url));
-  });
+  urlArray.forEach( url => isUrlArchived(url, download.bind(null, url)));
 };
 
 exports.addIfNotInList = function(url, exists) {

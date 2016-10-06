@@ -53,7 +53,6 @@ var actions = {
       archive.isUrlArchived(url, function(exists) {
         if (!exists) {
           renderPage(res, archive.paths.siteAssets + '/loading.html', 302);
-          archive.readListOfUrls(archive.downloadUrls);
         } else {
           renderPage(res, archive.paths.archivedSites + '/' + url, 200);
         }
