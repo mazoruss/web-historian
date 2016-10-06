@@ -14,6 +14,7 @@ var sendResponse = function(res, data, statusCode) {
 };
 
 var renderPage = function(res, pathName, statusCode) {
+  console.log('rendering ' + pathName);
   fs.readFile(pathName, function(err, data) {
     if (err || !data) {
       sendResponse(res, null, 404);
@@ -51,17 +52,12 @@ var actions = {
       }
       archive.isUrlArchived(url, function(exists) {
         if (!exists) {
-          // TODO: Download urls
-          archive.readListOfUrls(function() {});
+          renderPage(res, archive.paths.siteAssets + '/loading.html', 302);
+          archive.readListOfUrls(archive.downloadUrls);
+        } else {
+          renderPage(res, archive.paths.archivedSites + '/' + url, 200);
         }
       });
-      // TODO: THIS LOGIG
-      //if url is archived
-        //render page
-      //else
-        //render loading page
-      //TODO: take this out
-      renderPage(res, archive.paths.siteAssets + '/index.html', 302);
     });
   },
 
