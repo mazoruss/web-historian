@@ -25,37 +25,70 @@ exports.initialize = function(pathsObj) {
 // The following function names are provided to you to suggest how you might
 // modularize your code. Keep it clean!
 
-var readListOfUrls = exports.readListOfUrls = function() {
+var readListOfUrls = exports.readListOfUrls = function(callback) {
   var urls = [];
-  var txtList = fs.createReadStream(paths.list);
-  var remaining = '';
-  txtList.on('data', function(data) {
-    remaining += data;
-    var index = remaining.indexOf('\n');
-    while (index > -1) {
-      var line = remaining.slice(0, index);
-      remaining = remaining.slice(index + 1);
-      urls.push(line);
-      index = remaining.indexOf('\n');
+  fs.readFile(paths.list, function(err, data) {
+    if (err) {
+      console.log(err);
     }
+    urls = (data.toString() === '') ? [] : data.toString().split('\n');
+    callback ? callback(urls) : null;
   });
-  txtList.on('end', function() {
-    if (remaining.length > 0) {
-      urls.push(remaining);
+};
+
+exports.isUrlInList = function(url, callback) {
+  var exists = false;
+  readListOfUrls(function(urls) {
+    exists = urls.indexOf(url) > -1;
+    callback(exists);
+  });
+};
+
+var addUrlToList = exports.addUrlToList = function(url) {
+  readListOfUrls(function(urls) {
+    urls.push(url);
+    fs.writeFile(paths.list, urls.join('\n'), function(err) {
+      if (err) {
+        console.log(err);
+      }
+    });
+  });
+};
+
+var isUrlArchived = exports.isUrlArchived = function(url, callback) {
+  var pathName = paths.archivedSites + '/' + url;
+  fs.stat(pathName, function(err, stats) {
+    callback(Boolean(stats));
+  });
+};
+
+exports.downloadUrls = function(urlArray) {
+  var download = function(url, exists) {
+    if (!exists) {
+      var req = http.request(url, function(res) {
+        var html = '';
+        res.on('data', function(chunk) {
+          html += chunk;
+        });
+        res.on('end', function() {
+          fs.writeFile(paths.archivedSites + '/' + url, html.toString(), function(error) {
+            if (error) {
+              console.log(error);
+            }
+          });
+        });
+      });
+      req.end();
     }
+  };  
+  urlArray.forEach( url => {
+    isUrlArchived(url, download.bind(null, url));
   });
-  return urls;
+
 };
 
-exports.isUrlInList = function(url) {
-  return readListOfUrls().includes(url);
-};
-
-exports.addUrlToList = function(url) {
-};
-
-exports.isUrlArchived = function() {
-};
-
-exports.downloadUrls = function() {
+exports.addIfNotInList = function(url, exists) {
+  if (!exists) {
+    addUrlToList(url);
+  }
 };

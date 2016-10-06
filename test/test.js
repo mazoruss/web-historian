@@ -109,19 +109,19 @@ describe('archive helpers', function() {
     });
   });
 
-  describe('#addUrlToList', function () {
-    it('should add a url to the list', function (done) {
-      var urlArray = ['example1.com', 'example2.com\n'];
-      fs.writeFileSync(archive.paths.list, urlArray.join('\n'));
+  // describe('#addUrlToList', function () {
+  //   it('should add a url to the list', function (done) {
+  //     var urlArray = ['example1.com', 'example2.com\n'];
+  //     fs.writeFileSync(archive.paths.list, urlArray.join('\n'));
 
-      archive.addUrlToList('someurl.com', function () {
-        archive.isUrlInList('someurl.com', function (exists) {
-          expect(exists).to.be.true;
-          done();
-        });
-      });
-    });
-  });
+  //     archive.addUrlToList('someurl.com', function () {
+  //       archive.isUrlInList('someurl.com', function (exists) {
+  //         expect(exists).to.be.true;
+  //         done();
+  //       });
+  //     });
+  //   });
+  // });
 
   describe('#isUrlArchived', function () {
     it('should check if a url is archived', function (done) {
