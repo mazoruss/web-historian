@@ -2,6 +2,7 @@ var fs = require('fs');
 var path = require('path');
 var _ = require('underscore');
 var http = require('http');
+var Promise = require('bluebird');
 
 var paths = exports.paths = {
   siteAssets: path.join(__dirname, '../web/public'),
@@ -16,44 +17,50 @@ exports.initialize = function(pathsObj) {
   });
 };
 
-var readListOfUrls = exports.readListOfUrls = function(callback) {
-  fs.readFile(paths.list, (err, data) => {
-    var urls = (data.toString() === '') ? [] : data.toString().split('\n');
-    callback ? callback(urls) : null;
+var readListOfUrls = exports.readListOfUrls = function() {
+  var promise = new Promise( function(resolve, reject) {
+    fs.readFile(paths.list, (err, data) => {
+      var urls = (data.toString() === '') ? [] : data.toString().split('\n');
+      resolve(urls);
+    });
   });
+  return promise;
 };
 
-exports.isUrlInList = function(url, callback) {
-  readListOfUrls(urls => callback(urls.indexOf(url) > -1));
+var isUrlInList = exports.isUrlInList = function(url, list) {
+  return list.indexOf(url) > -1;
 };
 
 var addUrlToList = exports.addUrlToList = function(url) {
-  readListOfUrls(function(urls) {
-    urls.push(url);
-    fs.writeFile(paths.list, urls.join('\n'), err => {});
+  readListOfUrls().then(function(urls) {
+    if (!isUrlInList(url, urls)) {
+      urls.push(url);
+      fs.writeFile(paths.list, urls.join('\n'), err => {});
+    }
   });
 };
 
-var isUrlArchived = exports.isUrlArchived = function(url, callback) {
-  fs.stat(paths.archivedSites + '/' + url, (err, stats) => callback(Boolean(stats)));
+var isUrlArchived = exports.isUrlArchived = function(url) {
+  var promise = new Promise(function(resolve, reject) {
+    fs.stat(paths.archivedSites + '/' + url, (err, stats) => resolve(Boolean(stats)));
+  });
+  return promise;
 };
 
-exports.downloadUrls = function(urlArray) {
-  var download = function(url, exists) {
-    if (!exists) {
-      var req = http.request('http://' + url, function(res) {
-        var html = '';
-        res.on('data', chunk => html += chunk);
-        res.on('end', () => fs.writeFile(paths.archivedSites + '/' + url, html.toString(), err => {}));
-      });
-      req.end();
-    }
+exports.downloadUrls = function() {
+  var download = function(url) {
+    var req = http.request('http://' + url, function(res) {
+      var html = '';
+      res.on('data', chunk => html += chunk);
+      res.on('end', () => fs.writeFile(paths.archivedSites + '/' + url, html.toString(), err => {}));
+    });
+    req.end();
   };  
-  urlArray.forEach( url => isUrlArchived(url, download.bind(null, url)));
-};
-
-exports.addIfNotInList = function(url, exists) {
-  if (!exists) {
-    addUrlToList(url);
-  }
+  readListOfUrls().then( urls => {
+    urls.forEach( url => {
+      isUrlArchived(url).then(exists => {
+        exists || download(url);
+      });
+    });
+  });
 };

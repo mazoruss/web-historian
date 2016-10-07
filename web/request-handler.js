@@ -48,9 +48,9 @@ var actions = {
     req.on('end', function() {
       if (url !== '') {
         url = url.split('url=')[1];
-        archive.isUrlInList(url, archive.addIfNotInList.bind(null, url));
+        archive.addUrlToList(url);
       }
-      archive.isUrlArchived(url, function(exists) {
+      archive.isUrlArchived().then(function(exists) {
         if (!exists) {
           renderPage(res, archive.paths.siteAssets + '/loading.html', 302);
         } else {
